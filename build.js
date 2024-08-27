@@ -1,6 +1,6 @@
 'use strict';
 
-const glob = require('glob');
+const glob = require('fast-glob');
 const { promisify } = require('util');
 const { build } = require('esbuild');
 const fs = require('fs');
