@@ -19,10 +19,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
-      - run: yarn lint
-      - run: yarn lint-docs
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
+      - run: pnpm lint
+      - run: pnpm lint-docs
   docs:
     name: Generate docs
     runs-on: ubuntu-latest
@@ -31,14 +31,28 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
-      - run: yarn docs
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
+      - run: pnpm docs
   test-typings:
     strategy:
       fail-fast: false
       matrix:
-        ts-version: ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "5.0", "5.1", "5.2"]
+        ts-version:
+          [
+            "4.1",
+            "4.2",
+            "4.3",
+            "4.4",
+            "4.5",
+            "4.6",
+            "4.7",
+            "4.8",
+            "4.9",
+            "5.0",
+            "5.1",
+            "5.2",
+          ]
     name: TS Typings (${{ matrix.ts-version }})
     runs-on: ubuntu-latest
     steps:
@@ -46,10 +60,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
-      - run: yarn add --dev typescript@~${{ matrix.ts-version }} --ignore-engines
-      - run: yarn test-typings
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
+      - run: pnpm add --dev typescript@~${{ matrix.ts-version }} --ignore-engines
+      - run: pnpm test-typings
   test-oracle:
     strategy:
       fail-fast: false
@@ -72,18 +86,18 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - if: matrix.oracle-version == '18'
         name: Install Local Oracle DB 18
-        run: yarn start-oracle-oldest
+        run: pnpm start-oracle-oldest
       - if: matrix.oracle-version == '23'
         name: Install Local Oracle DB 23
-        run: yarn start-oracle-latest
+        run: pnpm start-oracle-latest
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
   test-db2:
     strategy:
       fail-fast: false
@@ -103,15 +117,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - name: Install Local DB2 Copy
-        run: yarn start-db2
+        run: pnpm start-db2
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
         continue-on-error: true
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
         continue-on-error: true
   test-sqlite:
     strategy:
@@ -127,12 +141,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
   test-postgres:
     strategy:
       fail-fast: false
@@ -163,15 +177,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
-      - run: yarn add pg-native --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
+      - run: pnpm add pg-native --ignore-engines
         if: matrix.native
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
         if: ${{ !matrix.minify-aliases }}
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
   test-mysql-mariadb:
     strategy:
       fail-fast: false
@@ -231,12 +245,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
   test-mssql:
     strategy:
       fail-fast: false
@@ -270,12 +284,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
       - name: Integration Tests
-        run: yarn test-integration
+        run: pnpm test-integration
   test-snowflake:
     strategy:
       fail-fast: false
@@ -290,12 +304,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - name: Unit Tests
-        run: yarn test-unit
+        run: pnpm test-unit
       # - name: Integration Tests
-      #   run: yarn test-integration
+      #   run: pnpm test-integration
   release:
     name: Release
     runs-on: ubuntu-latest
@@ -318,8 +332,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: yarn global add node-gyp --ignore-engines
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: pnpm global add node-gyp --ignore-engines
+      - run: pnpm install --frozen-lockfile --ignore-engines
       - run: npx semantic-release
       - id: sequelize
         uses: sdepold/github-action-get-latest-release@master

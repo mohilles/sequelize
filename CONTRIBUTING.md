@@ -113,11 +113,11 @@ Clone the repository (if you haven't already) via `git clone https://github.com/
 
 ### 2. Install the Node.js dependencies
 
-Run `npm install` (or `yarn install`) within the cloned repository folder.
+Run `npm install` (or `pnpm install`) within the cloned repository folder.
 
 #### 2.1 Adding and updating dependencies
 
-[Yarn v1](https://classic.yarnpkg.com/en/) is used in the CI/CD pipeline so adding and updating dependencies must be done with Yarn v1. Depending on the Node version used, you might encounter a `Found incompatible module` error. To solve that, you can pass the `--ignore-engines` flag. This is not needed if you use Node `^14.17.0 || >=16.0.0`.
+[Yarn v1](https://classic.yarnpkg.com/en/) is used in the CI/CD pipeline so adding and updating dependencies must be done with pnpm v1. Depending on the Node version used, you might encounter a `Found incompatible module` error. To solve that, you can pass the `--ignore-engines` flag. This is not needed if you use Node `^14.17.0 || >=16.0.0`.
 
 ### 3. Prepare local databases to run tests
 
