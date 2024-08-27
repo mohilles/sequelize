@@ -1,2 +1,4 @@
-yarn lint-staged --concurrent false
-yarn delete-changelog
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx lint-staged

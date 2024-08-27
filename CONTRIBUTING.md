@@ -25,7 +25,7 @@ Learn to use [GitHub flavored markdown](https://help.github.com/articles/github-
 
 ### Opening an issue to report a bug
 
-It is essential that you provide an [SSCCE](http://sscce.org/)/[MCVE](https://stackoverflow.com/help/minimal-reproducible-example) for your issue. You can use the [sequelize-sscce](https://github.com/sequelize/sequelize-sscce) repository. Tell us what is the actual (incorrect) behavior and what should have happened (do not expect the maintainers to know what should happen!). Make sure you checked the bug persists in the latest Sequelize version.
+It is essential that you provide an [SSCCE](http://sscce.org/)/[MCVE](https://stackoverflow.com/help/minimal-reproducible-example) for your issue. You can use the [papb/sequelize-sscce](https://github.com/papb/sequelize-sscce) repository. Tell us what is the actual (incorrect) behavior and what should have happened (do not expect the maintainers to know what should happen!). Make sure you checked the bug persists in the latest Sequelize version.
 
 If you can even provide a Pull Request with a failing test (unit test or integration test), that is great! The bug will likely be fixed much faster in this case.
 
@@ -67,7 +67,7 @@ A Pull Request is a request for maintainers to "pull" a specific change in code 
 
 Anyone can open a Pull Request, there is no need to ask for permission. Maintainers will look at your pull request and tell you if anything else must be done before it can be merged.
 
-The target of the Pull Request should be the `main` branch (or in rare cases the `v6` branch, if previously agreed with a maintainer).
+The target of the Pull Request should be the `main` branch (or in rare cases the `v5` branch, if previously agreed with a maintainer).
 
 Please check the _allow edits from maintainers_ box when opening it. Thank you in advance for any pull requests that you open!
 
@@ -99,14 +99,13 @@ Most operating systems provide all the needed tools (including Windows, Linux an
 
 - Optional (recommended):
 
-  - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose Plugin](https://docs.docker.com/compose/install/)
+  - [Docker](https://docs.docker.com/get-docker/)
     - It is not mandatory because you can easily locally run tests against SQLite without it.
     - It is practically mandatory if you want to locally run tests against any other database engine (MySQL, MariaDB, Postgres,Db2 and MSSQL), unless you happen to have the engine installed and is willing to make some manual configuration.
   - [Visual Studio Code](https://code.visualstudio.com/)
     - [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig)
-      - Also run `npm install --global editorconfig` (or `yarn global add editorconfig`) to make sure this extension will work properly
+      - Also run `npm install --global editorconfig` to make sure this extension will work properly
     - [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-    - [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 
 ### 1. Clone the repository
 
@@ -114,41 +113,11 @@ Clone the repository (if you haven't already) via `git clone https://github.com/
 
 ### 2. Install the Node.js dependencies
 
-Run `yarn install` within the cloned repository folder to install the dependencies.
-
-Once installed, run the `yarn build` command to build the project.
+Run `npm install` (or `npm install`) within the cloned repository folder.
 
 #### 2.1 Adding and updating dependencies
 
-[Yarn v4](https://yarnpkg.com//) is used in the CI/CD pipeline so adding and updating dependencies must be done with Yarn.
-
-#### 2.2 Running commands
-
-Sequelize is a monorepo and uses `lerna` to run scripts in each of the packages. The syntax for the commands is: `yarn lerna run` followed by the script name. For example:
-
-```
-yarn lerna run test-unit
-```
-
-By default, the `yarn lerna run` command will run the script in all packages which have a matching script. By appending `--scope=package_name` to the command (where `package_name` is the name of the package you want to run the script on) you can select a specific package to run the script on. For example:
-
-```
-yarn lerna run test-unit --scope=@sequelize/core
-```
-
-Lerna caching is enabled and the following commands:
-
-- `yarn build`
-- `yarn test-typings`
-- `yarn test-unit`
-
-Currently the caching is configured to watch the `src` folder and `package.json` and `tsconfig.json` files in each package for production changes and all files in each package for default changes.
-
-This means that running the `yarn build` command and not making changes to the production files (see above), the output of the commands loaded from cache rather than the command executing. When running `yarn test-typings` or `yarn test-unit`, any changes in the package folder will cause command to run rather than the results loaded from cache.
-
-If you run into any issues with the cache, running the command `yarn dlx nx reset` will reset the cache.
-
-For more information about using `lerna` commands, use the [Lerna Documentation](https://lerna.js.org/docs/api-reference/commands).
+[Yarn v1](https://classic.yarnpkg.com/en/) is used in the CI/CD pipeline so adding and updating dependencies must be done with npm v1. Depending on the Node version used, you might encounter a `Found incompatible module` error. To solve that, you can pass the `--ignore-engines` flag. This is not needed if you use Node `^14.17.0 || >=16.0.0`.
 
 ### 3. Prepare local databases to run tests
 
@@ -158,19 +127,17 @@ If you're happy to run tests only against an SQLite database, you can skip this 
 
 If you have Docker installed, use any of the following commands to start fresh local databases of the dialect of your choice:
 
-- `yarn start-mariadb-oldest` (for MariaDB 10.4) or `yarn start-mariadb-latest` (for MariaDB 11.3)
-- `yarn start-mysql-oldest` (for MySQL 8.0) or `yarn start-mysql-latest` (for MySQL 8.3)
-- `yarn start-postgres-oldest` (for Postgres 11) or `yarn start-postgres-latest` (for Postgres 15)
-- `yarn start-mssql-oldest` (for MSSQL 2017) or `yarn start-mssql-latest` (for MSSQL 2022)
-- `yarn start-db2-oldest` (for Db2 11.5.5.1) or `yarn start-db2-latest` (for Db2 11.5.9.0)
+- `npm run start-mariadb`
+- `npm run start-mysql`
+- `npm run start-postgres`
+- `npm run start-mssql`
+- `npm run start-db2`
 
 _Note:_ if you're using Windows, make sure you run these from Git Bash (or another MinGW environment), since these commands will execute bash scripts. Recall that [it's very easy to include Git Bash as your default integrated terminal on Visual Studio Code](https://code.visualstudio.com/docs/editor/integrated-terminal).
 
 Each of these commands will start a Docker container with the corresponding database, ready to run Sequelize tests (or an SSCCE).
 
-You can run `yarn stop-X` to stop the servers once you're done.
-
-The docker containers retain storage in volumes to improve startup time. If you run into to any issues with a container, you can run `yarn reset-{dialect}` or `yarn reset-all` to remove the containers and volumes.
+You can run `npm run stop-X` to stop the servers once you're done.
 
 ##### Hint for Postgres
 
@@ -182,36 +149,34 @@ docker run -d --name pgadmin4 -p 8888:80 -e 'PGADMIN_DEFAULT_EMAIL=test@example.
 
 #### 3.2. Without Docker
 
-You will have to manually install and configure each of database engines you want. Check the `dev/dialect-name` folder within this repository and look carefully at how it is defined via Docker and via the auxiliary bash script, and mimic that exactly (except for the database name, username, password, host and port, that you can customize via the `SEQ_DB`, `SEQ_USER`, `SEQ_PW`, `SEQ_HOST` and `SEQ_PORT` environment variables, respectively). Please refer to the [Version Policy](https://sequelize.org/releases/) for the oldest supported version of each database.
+You will have to manually install and configure each of database engines you want. Check the `dev/dialect-name` folder within this repository and look carefully at how it is defined via Docker and via the auxiliary bash script, and mimic that exactly (except for the database name, username, password, host and port, that you can customize via the `SEQ_DB`, `SEQ_USER`, `SEQ_PW`, `SEQ_HOST` and `SEQ_PORT` environment variables, respectively).
 
 ### 4. Running tests
 
 Before starting any work, try to run the tests locally in order to be sure your setup is fine. Start by running the SQLite tests:
 
 ```
-yarn lerna run test-sqlite
+npm run test-sqlite
 ```
 
 Then, if you want to run tests for another dialect, assuming you've set it up as written on section 3, run the corresponding command:
 
-- `yarn lerna run test-mysql`
-- `yarn lerna run test-mariadb`
-- `yarn lerna run test-postgres`
-- `yarn lerna run test-mssql`
-- `yarn lerna run test-db2`
+- `npm run test-mysql`
+- `npm run test-mariadb`
+- `npm run test-postgres`
+- `npm run test-mssql`
+- `npm run test-db2`
 
-There are also the `test-unit-*` and `test-integration-*` sets of scripts (for example, `test-integration-postgres`).
-
-_Note:_ when running these test, you will need to run `yarn build` after you have made changes to the source code for these changes to affect the tests. The `yarn lerna run test-{dialect}` command does this for you.
+There are also the `test-unit-*` and `test-integration-*` sets of npm scripts (for example, `test-integration-postgres`).
 
 #### 4.1. Running only some tests
 
-While you're developing, you may want to execute only a single test (or a few), instead of executing everything (which takes some time). You can easily achieve this by modifying the `.mocharc.jsonc` file inside the package's root directory (but don't commit those changes!) to use `spec` (and maybe `grep`) from Mocha to specify the desired tests. Then, from your terminal, navigate to the package's root directory and simply call `DIALECT=some-dialect yarn mocha` (example: `DIALECT=postgres yarn mocha`). The package root directory is where the package.json file for the package is located. For example with the @sequelize/core package, the package root directory is [packages/core](https://github.com/sequelize/sequelize/tree/main/packages/core).
+While you're developing, you may want to execute only a single test (or a few), instead of executing everything (which takes some time). You can easily achieve this by modifying the `.mocharc.jsonc` file (but don't commit those changes!) to use `spec` (and maybe `grep`) from Mocha to specify the desired tests. Then, simply call `DIALECT=some-dialect npx mocha` from your terminal (example: `DIALECT=postgres npx mocha`).
 
-Hint: if you're creating a new test, you can execute only that test locally against all dialects by adapting the `spec` and `grep` options on `.mocharc.jsonc` and running the following from your terminal (assuming you already set up the database instances via the corresponding `yarn setup-*` calls, as explained on [Section 3a](https://github.com/sequelize/sequelize/blob/main/CONTRIBUTING.md#3a-with-docker-recommended) and you are in the package's root directory):
+Hint: if you're creating a new test, you can execute only that test locally against all dialects by adapting the `spec` and `grep` options on `.mocharc.jsonc` and running the following from your terminal (assuming you already set up the database instances via the corresponding `npm run setup-*` calls, as explained on [Section 3a](https://github.com/sequelize/sequelize/blob/main/CONTRIBUTING.md#3a-with-docker-recommended)):
 
 ```
-DIALECT=mariadb yarn mocha && DIALECT=mysql yarn mocha && DIALECT=postgres yarn mocha && DIALECT=sqlite yarn mocha && DIALECT=mssql yarn mocha && DIALECT=db2 yarn mocha
+DIALECT=mariadb npx mocha && DIALECT=mysql npx mocha && DIALECT=postgres npx mocha && DIALECT=sqlite npx mocha && DIALECT=mssql npx mocha && DIALECT=db2 npx mocha
 ```
 
 ### 5. Running an SSCCE
@@ -222,60 +187,36 @@ You can modify the `sscce.js` file (at the root of the repository) to create an 
 
 Run it for the dialect of your choice using one of the following commands:
 
-- `npm run sscce-mariadb` / `yarn sscce-mariadb`
-- `npm run sscce-mysql` / `yarn sscce-mysql`
-- `npm run sscce-postgres` / `yarn sscce-postgres`
-- `npm run sscce-sqlite` / `yarn sscce-sqlite`
-- `npm run sscce-mssql` / `yarn sscce-mssql`
-- `npm run sscce-db2` / `yarn sscce-db2`
+- `npm run sscce-mariadb`
+- `npm run sscce-mysql`
+- `npm run sscce-postgres`
+- `npm run sscce-sqlite`
+- `npm run sscce-mssql`
+- `npm run sscce-db2`
 
 _Note:_ First, you need to set up (once) the database instance for corresponding dialect, as explained on [Section 3a](https://github.com/sequelize/sequelize/blob/main/CONTRIBUTING.md#3a-with-docker-recommended).
 
 #### 5.1. Debugging an SSCCE with Visual Studio Code
 
-If you open the `package.json` file with Visual Studio Code, you will find a small `debug` button rendered right above the `"scripts": {` line. By clicking it, a popup will appear where you can choose which script you want to debug. Select one of the `sscce-*` scripts (listed above) and VSCode will immediately launch your SSCCE in debug mode (meaning that it will stop on any breakpoints that you place within `sscce.js` or any other Sequelize source code).
+If you open the `package.json` file with Visual Studio Code, you will find a small `debug` button rendered right above the `"scripts": {` line. By clicking it, a popup will appear where you can choose which npm script you want to debug. Select one of the `sscce-*` scripts (listed above) and VSCode will immediately launch your SSCCE in debug mode (meaning that it will stop on any breakpoints that you place within `sscce.js` or any other Sequelize source code).
 
 ### 6. Commit your modifications
 
-We squash all commits into a single one when we merge your PR.
-That means you don't have to follow any convention in your commit messages,
-but you will need to follow the [Conventional Commits Conventions](https://www.conventionalcommits.org/en/v1.0.0/) when writing the title of your PR.
-
-We will then use the title of your PR as the message of the Squash Commit. It will then be used to automatically generate a changelog and calculate the next [semver](https://semver.org/) version number.
-
-We use a simple conventional commits convention:
-
-- The allowed commit types are: `docs`, `feat`, `fix`, `meta`.
-- We allow the following commit scopes (they're the list of packages):
-  - `core`
-  - `utils`
-  - `cli`
-  - `validator.js`
-  - `postgres`
-  - `mysql`
-  - `mariadb`
-  - `sqlite`
-  - `mssql`
-  - `db2`
-  - `ibmi`
-  - `snowflake`
-- If your changes impact more than one scope, simply omit the scope.
+Sequelize follows the [AngularJS Commit Message Conventions](https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y/edit#heading=h.em2hiij8p46d). The allowed categories are `build`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test` and `meta`.
 
 Example:
 
 ```
-feat(postgres): support specifying a custom name for enums
+feat(pencil): add `graphiteWidth` option
 ```
 
-Happy hacking and thank you for contributing.
+Commit messages are used to automatically generate a changelog and calculate the next version number according to [semver](https://semver.org/). They will be validated automatically using [commitlint](https://github.com/marionebl/commitlint).
+
+Then push and send your pull request. Happy hacking and thank you for contributing.
 
 # Coding guidelines
 
-Sequelize uses eslint and prettier to enforce a consistent coding style.
-We recommend configuring them in your IDE to automatically format your code on save.
-
-You can format your code at any point by running `yarn format`.
-Any issue not automatically fixed by this command will be printed to the console.
+Have a look at our [.eslintrc.json](https://github.com/sequelize/sequelize/blob/main/.eslintrc.json) file for the specifics. As part of the test process, all files will be linted, and your PR will **not** be accepted if it does not pass linting.
 
 # Contributing to the documentation
 

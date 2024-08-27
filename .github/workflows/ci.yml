@@ -2,301 +2,341 @@ name: CI
 on:
   push:
     branches:
-      - renovate/**
+      - v6
   pull_request:
-  merge_group:
-  workflow_dispatch:
 
-# This configuration cancels previous runs if a new run is started on the same PR. Only one run at a time per PR.
-# This does not affect pushes to the v7 branch itself, only PRs.
-# from https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-a-fallback-value
-concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+env:
+  SEQ_DB: sequelize_test
+  SEQ_USER: sequelize_test
+  SEQ_PW: sequelize_test
 
 jobs:
-  install-and-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 20]
-    name: Upload install and build artifact (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Build sequelize
-        run: yarn build
-      - name: Reset NX cache
-        run: yarn nx reset
-      - name: Compress artifact
-        run: tar -cf install-build-node-${{ matrix.node-version }}.tar ./packages/*/lib ./node_modules ./packages/*/node_modules
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
-        with:
-          name: install-build-artifact-node-${{ matrix.node-version }}
-          path: install-build-node-${{ matrix.node-version }}.tar
-          retention-days: 1
   lint:
-    name: Lint code
+    name: Lint code and docs
     runs-on: ubuntu-latest
-    needs: install-and-build
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 20.x
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-20
-      - name: Extract artifact
-        run: tar -xf install-build-node-20.tar
-      - run: yarn test:format
-  unit-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 20]
-    name: Unit test all dialects (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-${{ matrix.node-version }}
-      - name: Extract artifact
-        run: tar -xf install-build-node-${{ matrix.node-version }}.tar
-      - name: ESM / CJS export equivalence
-        run: yarn test-unit-esm
-      - name: Unit tests (validator.js)
-        run: yarn lerna run test-unit --scope=@sequelize/validator.js
-      - name: Unit tests (cli)
-        run: yarn lerna run test-unit --scope=@sequelize/cli
-      - name: Unit tests (utils)
-        run: yarn lerna run test-unit --scope=@sequelize/utils
-      - name: Unit tests (core - mariadb)
-        run: yarn lerna run test-unit-mariadb --scope=@sequelize/core
-      - name: Unit tests (mariadb package)
-        run: yarn lerna run test-unit --scope=@sequelize/mariadb
-      - name: Unit tests (core - mysql)
-        run: yarn lerna run test-unit-mysql --scope=@sequelize/core
-      - name: Unit tests (mysql package)
-        run: yarn lerna run test-unit --scope=@sequelize/mysql
-      - name: Unit tests (core - postgres)
-        run: yarn lerna run test-unit-postgres --scope=@sequelize/core
-      - name: Unit tests (postgres package)
-        run: yarn lerna run test-unit --scope=@sequelize/postgres
-      - name: Unit tests (core - sqlite3)
-        run: yarn lerna run test-unit-sqlite3 --scope=@sequelize/core
-      - name: Unit tests (core - mssql)
-        run: yarn lerna run test-unit-mssql --scope=@sequelize/core
-      - name: Unit tests (mssql package)
-        run: yarn lerna run test-unit --scope=@sequelize/mssql
-      - name: Unit tests (core - db2)
-        run: yarn lerna run test-unit-db2 --scope=@sequelize/core
-      - name: Unit tests (core - ibmi)
-        run: yarn lerna run test-unit-ibmi --scope=@sequelize/core
-      - name: Unit tests (core - snowflake)
-        run: yarn lerna run test-unit-snowflake --scope=@sequelize/core
-      - name: SQLite SSCCE
-        run: yarn sscce-sqlite3
-  test-win:
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 20]
-    name: Build and test on Windows (Node ${{ matrix.node-version }})
-    runs-on: windows-latest
-    needs: lint # don't bother running if lint tests fail
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Build sequelize
-        run: yarn build
-      - name: Unit tests
-        run: yarn lerna run test-unit
-      - name: SSCCE
-        run: yarn sscce-sqlite3
-      - name: Integration tests (sqlite3)
-        run: yarn lerna run test-integration-sqlite3 --scope=@sequelize/core
+          node-version: 18.x
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - run: npm lint
+      - run: npm lint-docs
   docs:
-    name: Generate TypeDoc
+    name: Generate docs
     runs-on: ubuntu-latest
-    needs: lint
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 20.x
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-20
-      - name: Extract artifact
-        run: tar -xf install-build-node-20.tar
-      - run: yarn docs
+          node-version: 18.x
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - run: npm docs
   test-typings:
     strategy:
       fail-fast: false
       matrix:
-        ts-version: ['5.1', '5.2', '5.3', '5.4']
+        ts-version:
+          [
+            "4.1",
+            "4.2",
+            "4.3",
+            "4.4",
+            "4.5",
+            "4.6",
+            "4.7",
+            "4.8",
+            "4.9",
+            "5.0",
+            "5.1",
+            "5.2",
+          ]
     name: TS Typings (${{ matrix.ts-version }})
     runs-on: ubuntu-latest
-    needs: lint
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 20.x
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-20
-      - name: Extract artifact
-        run: tar -xf install-build-node-20.tar
-      - name: Install TypeScript
-        run: yarn add typescript@~${{ matrix.ts-version }}
-      - name: Typing Tests
-        run: yarn test-typings
-  test-sqlite3:
+          node-version: 18.x
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - run: npm add --dev typescript@~${{ matrix.ts-version }} --ignore-engines
+      - run: npm test-typings
+  test-oracle:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
-    name: sqlite3 (Node ${{ matrix.node-version }})
+        oracle-version: [18, 23]
+        node-version: [10, 18]
+    name: Oracle DB ${{ matrix.oracle-version }} (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    needs: [unit-test, test-typings]
     env:
-      DIALECT: sqlite3
+      DIALECT: oracle
+      SEQ_ORACLE_USER: sequelizetest
+      SEQ_ORACLE_PW: sequelizepassword
+      SEQ_ORACLE_DB: XEPDB1
+      SEQ_ORACLE_HOST: localhost
+      SEQ_ORACLE_PORT: 1521
+      LD_LIBRARY_PATH: ${{ github.workspace }}/.oracle/instantclient
+      UV_THREADPOOL_SIZE: 128
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-${{ matrix.node-version }}
-      - name: Extract artifact
-        run: tar -xf install-build-node-${{ matrix.node-version }}.tar
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - if: matrix.oracle-version == '18'
+        name: Install Local Oracle DB 18
+        run: npm start-oracle-oldest
+      - if: matrix.oracle-version == '23'
+        name: Install Local Oracle DB 23
+        run: npm start-oracle-latest
+      - name: Unit Tests
+        run: npm test-unit
       - name: Integration Tests
-        run: yarn lerna run test-integration --scope=@sequelize/core
+        run: npm test-integration
+  test-db2:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [10, 18]
+    name: DB2 (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    env:
+      DIALECT: db2
+      SEQ_DB: testdb
+      SEQ_USER: db2inst1
+      SEQ_PW: password
+      SEQ_TEST_CLEANUP_TIMEOUT: 1200000
+      SEQ_PORT: 50000
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - name: Install Local DB2 Copy
+        run: npm start-db2
+      - name: Unit Tests
+        run: npm test-unit
+        continue-on-error: true
+      - name: Integration Tests
+        run: npm test-integration
+        continue-on-error: true
+  test-sqlite:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [10, 18]
+    name: SQLite (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    env:
+      DIALECT: sqlite
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - name: Unit Tests
+        run: npm test-unit
+      - name: Integration Tests
+        run: npm test-integration
   test-postgres:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
-        postgres-version: [oldest, latest]
+        node-version: [10, 18]
+        postgres-version: [9.5, 10] # Does not work with 12
         minify-aliases: [true, false]
         native: [true, false]
-    name: postgres ${{ matrix.postgres-version }}${{ matrix.native && ' (native)' || '' }} (Node ${{ matrix.node-version }})${{ matrix.minify-aliases && ' (minified aliases)' || '' }}
+    name: Postgres ${{ matrix.postgres-version }}${{ matrix.native && ' (native)' || '' }} (Node ${{ matrix.node-version }})${{ matrix.minify-aliases && ' (minified aliases)' || '' }}
     runs-on: ubuntu-latest
-    needs: [unit-test, test-typings]
+    services:
+      postgres:
+        image: sushantdhiman/postgres:${{ matrix.postgres-version }}
+        env:
+          POSTGRES_USER: sequelize_test
+          POSTGRES_DB: sequelize_test
+          POSTGRES_PASSWORD: sequelize_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     env:
+      SEQ_PORT: 5432
       DIALECT: ${{ matrix.native && 'postgres-native' || 'postgres' }}
       SEQ_PG_MINIFY_ALIASES: ${{ matrix.minify-aliases && '1' || '' }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - run: PGPASSWORD=sequelize_test psql -h localhost -p 5432 -U sequelize_test sequelize_test -c '\l'
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-${{ matrix.node-version }}
-      - name: Extract artifact
-        run: tar -xf install-build-node-${{ matrix.node-version }}.tar
-      - name: Install pg-native
-        run: yarn workspace @sequelize/core add pg-native
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - run: npm add pg-native --ignore-engines
         if: matrix.native
-      - run: yarn start-postgres-${{ matrix.postgres-version }}
+      - name: Unit Tests
+        run: npm test-unit
+        if: ${{ !matrix.minify-aliases }}
       - name: Integration Tests
-        run: yarn lerna run test-integration --scope=@sequelize/core
-  test-oldest-latest:
+        run: npm test-integration
+  test-mysql-mariadb:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
-        database-version: [oldest, latest]
-        dialect: [mysql, mariadb, mssql, db2]
-    name: ${{ matrix.dialect }} ${{ matrix.database-version }} (Node ${{ matrix.node-version }})
+        include:
+          - name: MySQL 5.7
+            image: mysql:5.7
+            dialect: mysql
+            node-version: 10
+          - name: MySQL 5.7
+            image: mysql:5.7
+            dialect: mysql
+            node-version: 18
+          - name: MySQL 8.0
+            image: mysql:8.0
+            dialect: mysql
+            node-version: 10
+          - name: MySQL 8.0
+            image: mysql:8.0
+            dialect: mysql
+            node-version: 18
+          - name: MariaDB 10.3
+            image: mariadb:10.3
+            dialect: mariadb
+            node-version: 10
+          - name: MariaDB 10.3
+            image: mariadb:10.3
+            dialect: mariadb
+            node-version: 18
+          - name: MariaDB 10.5
+            image: mariadb:10.5
+            dialect: mariadb
+            node-version: 10
+          - name: MariaDB 10.5
+            image: mariadb:10.5
+            dialect: mariadb
+            node-version: 18
+    name: ${{ matrix.name }} (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    needs: [unit-test, test-typings]
+    services:
+      mysql:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_DATABASE: sequelize_test
+          MYSQL_USER: sequelize_test
+          MYSQL_PASSWORD: sequelize_test
+          MYSQL_ROOT_PASSWORD: sequelize_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin -usequelize_test -psequelize_test status" --health-interval 10s --health-timeout 5s --health-retries 5 --tmpfs /var/lib/mysql:rw
     env:
+      SEQ_PORT: 3306
       DIALECT: ${{ matrix.dialect }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      - run: mysql --host 127.0.0.1 --port 3306 -uroot -psequelize_test -e "GRANT ALL ON *.* TO 'sequelize_test'@'%' with grant option; FLUSH PRIVILEGES;"
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-${{ matrix.node-version }}
-      - name: Extract artifact
-        run: tar -xf install-build-node-${{ matrix.node-version }}.tar
-      - run: yarn start-${{ matrix.dialect }}-${{ matrix.database-version }}
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - name: Unit Tests
+        run: npm test-unit
       - name: Integration Tests
-        run: yarn lerna run test-integration --scope=@sequelize/core
+        run: npm test-integration
+  test-mssql:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [10, 18]
+        mssql-version: [2017, 2019]
+    name: MSSQL ${{ matrix.mssql-version }} (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:${{ matrix.mssql-version }}-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: Password12!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -Q \"SELECT 1\""
+          --health-start-period 10s
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DIALECT: mssql
+      SEQ_USER: SA
+      SEQ_PW: Password12!
+      SEQ_PORT: 1433
+    steps:
+      - run: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE sequelize_test; ALTER DATABASE sequelize_test SET READ_COMMITTED_SNAPSHOT ON;"
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - name: Unit Tests
+        run: npm test-unit
+      - name: Integration Tests
+        run: npm test-integration
+  test-snowflake:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [10, 18]
+    name: SNOWFLAKE (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    env:
+      DIALECT: snowflake
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - name: Unit Tests
+        run: npm test-unit
+      # - name: Integration Tests
+      #   run: npm test-integration
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [docs, test-sqlite3, test-postgres, test-oldest-latest]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs:
+      [
+        lint,
+        docs,
+        test-typings,
+        test-sqlite,
+        test-postgres,
+        test-mysql-mariadb,
+        test-mssql,
+      ]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/v6' || github.ref == 'refs/heads/v6-beta')
     env:
-      NPM_TOKEN: '${{ secrets.NPM_TOKEN }}'
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - name: Generate Sequelize Bot Token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
         with:
-          app-id: '${{ secrets.SEQUELIZE_BOT_APP_ID }}'
-          private-key: '${{ secrets.SEQUELIZE_BOT_PRIVATE_KEY }}'
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          # Number of commits to fetch. 0 indicates all history for all branches and tags.
-          # We need the entire history to generate the changelog properly
-          fetch-depth: 0
-          # The credentials used for checkout are persisted
-          # Lerna will use the same credentials later for "git push".
-          # This must be done using the Sequelize bot.
-          token: '${{ steps.generate-token.outputs.token }}'
-      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-        with:
-          node-version: 20.x
-          cache: yarn
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-        with:
-          name: install-build-artifact-node-20
-      - name: Extract artifact
-        run: tar -xf install-build-node-20.tar
-      - name: Configure git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "bot@sequelize.org"
-      - name: Set npm auth token
-        run: npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-      - run: yarn publish-all
-        env:
-          GITHUB_TOKEN: '${{ steps.generate-token.outputs.token }}'
-          GH_TOKEN: '${{ steps.generate-token.outputs.token }}'
+          node-version: 18.x
+      - run: npm global add node-gyp --ignore-engines
+      - run: npm install --frozen-lockfile --ignore-engines
+      - run: npx semantic-release
       - id: sequelize
-        uses: sdepold/github-action-get-latest-release@aa12fcb2943e8899cbcc29ff6f73409b32b48fa1 # master
+        uses: sdepold/github-action-get-latest-release@master
         with:
           repository: sequelize/sequelize
       - name: Notify channels
