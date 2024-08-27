@@ -302,7 +302,7 @@
     "sscce-mssql": "cross-env DIALECT=mssql node sscce.js",
     "sscce-db2": "cross-env DIALECT=db2 node sscce.js",
     "sscce-oracle": "cross-env LD_LIBRARY_PATH=\"$PWD/.oracle/instantclient/\" DIALECT=oracle UV_THREADPOOL_SIZE=128 node sscce.js",
-    "prepare": "pnpm run build && husky install",
+    "postinstall": "pnpm run build && husky install",
     "build": "node ./build.js",
     "---------------------------------------------------------------------------------------------------": ""
   },
